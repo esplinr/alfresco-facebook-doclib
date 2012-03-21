@@ -1,0 +1,96 @@
+<project name="fb">
+	<macrodef name="clean" description="Cleans the given project">
+		<attribute name="projectdir" />
+		<sequential>
+			<delete includeEmptyDirs="true" quiet="yes" dir="@{projectdir}/${dir.name.build}/${dir.name.classes}" />
+			<delete includeEmptyDirs="true" quiet="yes" dir="@{projectdir}/${dir.name.build}/${dir.name.dist}" />
+			<delete includeEmptyDirs="true" quiet="yes" dir="@{projectdir}/${dir.name.build}/${dir.name.lib}" />
+			<delete includeEmptyDirs="true" quiet="yes" dir="@{projectdir}/${dir.name.build}/${dir.name.assemble}" />
+			<delete includeEmptyDirs="true" quiet="yes" dir="@{projectdir}/${dir.name.build}/${dir.name.test.results}" />
+			<delete includeEmptyDirs="true" quiet="yes" dir="@{projectdir}/${dir.name.build}/${dir.name.docs}" />
+		</sequential>
+	</macrodef>
+
+  <!-- Set base directory property -->
+  <dirname property="fb.basedir" file="${ant.file.fb}"/>
+  <dirname property="dir.module.fb.doclib" file="${ant.file.fb}"/>
+	
+  <!-- Import -->
+  <import file="${fb.basedir}/utils.xml" />
+
+  <target name="init">
+      <property environment="env" />
+
+      <!-- 
+            On UNIX, it's considered very poor form to dump a config file that
+            does not start with "." into the user's $HOME directory.  
+
+            On Windows, it's a bit more debatable, but in any event Alfresco 
+            config files should always start with "alfresco-...", so the current
+            prop file convention needs to be fixed no matter how you slice it.  
+            The conditional below is intended to make the transition more graceful 
+            until we re-work the build.  
+      -->
+      <condition property = "alfresco.user.override.properties.file"
+                 value    = "${user.home}/.alfresco-user-override.properties"
+                 else     = "${user.home}/user-override.properties">
+          <available file = "${user.home}/.alfresco-user-override.properties"/>
+      </condition>
+      <property file      = "${alfresco.user.override.properties.file}" />
+
+      <property file="${alfresco.basedir}/projects/repository/config/alfresco/version.properties" />
+      <property file="${alfresco.basedir}/${buildproperties.location}.properties"/>
+      <property file="${alfresco.basedir}/build.properties" />
+      <property file="${alfresco.basedir}/shared.properties" />
+      
+      <echo>user.home = ${user.home}</echo>
+      <echo>version.number = ${version.number}</echo>
+
+      <patternset id="files.tests.startup">
+      </patternset>
+      <patternset id="files.tests.intermittent">
+      </patternset>
+      <patternset id="files.tests">
+      </patternset>
+   </target>
+    
+   <!-- Set properties -->
+   <property environment="env" />
+   <property file="${fb.basedir}/build.properties" />
+	  
+   <!-- **************************************** -->
+   <!-- ** Facebook Alfresco Document Library ** -->
+   <!-- **************************************** -->
+
+   <target name="incremental"
+           depends="package" />
+
+   <target name="build"
+           depends="clean, incremental" />
+
+   <target name="clean"
+           depends="init">
+      <clean projectdir="${dir.module.fb.doclib}" />
+   </target>
+
+   <target name="compile"
+           depends="init">
+      <compile-java projectdir="${dir.module.fb.doclib}" />
+   </target>
+
+   <target name="package"
+           depends="package-extension" />
+
+   <target name="package-extension"
+           depends="init">
+	   <mkdir dir="${dir.module.fb.doclib.dist}" />
+      <zip destfile="${dir.module.fb.doclib.dist}/${file.name.amp.fb.doclib}"
+           update="true">
+         <zipfileset file="${dir.module.fb.doclib.property}/module.properties"/>
+         <zipfileset dir="${dir.module.fb.doclib.config}" prefix="config">
+            <exclude name="**/module.properties"/>
+         </zipfileset>
+      </zip>
+   </target>
+
+</project>
